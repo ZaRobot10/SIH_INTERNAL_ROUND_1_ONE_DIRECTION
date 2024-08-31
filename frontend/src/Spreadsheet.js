@@ -1,98 +1,104 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { HotTable, HotColumn } from '@handsontable/react';
+
+import { HotTable } from '@handsontable/react';
 import { registerAllModules } from 'handsontable/registry';
 import 'handsontable/dist/handsontable.full.min.css';
+import { useState, useCallback } from 'react';
 
 // Register Handsontable's modules
 registerAllModules();
 
-// Renderer components
-const ScoreRenderer = (props) => {
-  const { value } = props;
-  const color = value > 60 ? '#2ECC40' : '#FF4136';
-  return <span style={{ color }}>{value}</span>;
+// Function to generate Excel-like column headers
+const generateColumnHeaders = (numCols) => {
+  const columns = [];
+  for (let i = 0; i < numCols; i++) {
+    let header = '';
+    let n = i;
+    while (n >= 0) {
+      header = String.fromCharCode((n % 26) + 65) + header;
+      n = Math.floor(n / 26) - 1;
+    }
+    columns.push(header);
+  }
+  return columns;
 };
-
-const PromotionRenderer = (props) => {
-  const { value } = props;
-  return <span>{value ? '✔️' : '❌'}</span>;
-};
-
-// Initial data
-const initialData = [
-  { id: 1, name: 'Alex', score: 10, isPromoted: false },
-  { id: 2, name: 'Adam', score: 55, isPromoted: false },
-  { id: 3, name: 'Kate', score: 61, isPromoted: true },
-  { id: 4, name: 'Max', score: 98, isPromoted: true },
-  { id: 5, name: 'Lucy', score: 59, isPromoted: false },
-];
 
 const ExampleComponent = () => {
-  const hotTableComponent = useRef(null);
-  const [data, setData] = useState(initialData);
-  const [headers, setHeaders] = useState(['id', 'name', 'score', 'isPromoted']);
+  // Start with an initial set of rows and columns
+  const initialRows = 100;
+  const initialCols = 26;
+  const [data, setData] = useState(Array.from({ length: initialRows }, () => Array(initialCols).fill('')));
+  const [colHeaders, setColHeaders] = useState(generateColumnHeaders(initialCols));
 
-  // Load spreadsheet data from server (optional)
-  useEffect(() => {
-    fetch('http://localhost:5001/load/your-spreadsheet-id-here')
-      .then(response => response.json())
-      .then(fetchedData => {
-        if (fetchedData.length > 0) {
-          setData(fetchedData);
-          setHeaders(Object.keys(fetchedData[0])); // Set headers from the keys of the first row
-        }
-      })
-      .catch(error => console.error('Error loading spreadsheet data:', error));
-  }, []);
+  // Function to handle changes in the table
+  const handleAfterChange = useCallback((changes, source) => {
+    if (!changes) return;
 
-  // Save spreadsheet data to server
-  const saveData = () => {
-    fetch('http://localhost:5001/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-      .then(response => response.json())
-      .then(savedData => {
-        console.log('Success:', savedData);
-      })
-      .catch(error => console.error('Error saving spreadsheet data:', error));
-  };
+    // Determine the max row and column currently in use
+    const currentMaxRows = data.length;
+    const currentMaxCols = data[0].length;
 
-  // Function to add a new column
-  const addColumn = () => {
-    const newColIndex = headers.length;
-    const newColHeader = `New Column ${newColIndex + 1}`;
-    
-    // Update data with a new column
-    setData(data.map(row => ({ ...row, [newColHeader]: '' })));
-    
-    // Update headers
-    setHeaders([...headers, newColHeader]);
-  };
+    // Check if we need more rows or columns
+    let needsMoreRows = false;
+    let needsMoreCols = false;
+
+    changes.forEach(([row, col]) => {
+      if (row + 1 >= currentMaxRows) {
+        needsMoreRows = true;
+      }
+      if (col + 1 >= currentMaxCols) {
+        needsMoreCols = true;
+      }
+    });
+
+    // Expand rows if needed
+    if (needsMoreRows) {
+      setData((prevData) => [
+        ...prevData,
+        ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill('')), // Add 100 more rows
+      ]);
+    }
+
+    // Expand columns if needed
+    if (needsMoreCols) {
+      const newColCount = currentMaxCols + 10; // Expand by 10 more columns
+      setData((prevData) =>
+        prevData.map((row) => [...row, ...Array(10).fill('')])
+      );
+      setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
+    }
+  }, [data]);
+
+  // Function to handle selection
+  const handleAfterSelection = useCallback((row, col) => {
+    const currentMaxCols = data[0].length;
+    // Check if the selected column is the last one
+    if (col + 1 >= currentMaxCols) {
+      const newColCount = currentMaxCols + 10; // Expand by 10 more columns
+      setData((prevData) =>
+        prevData.map((row) => [...row, ...Array(10).fill('')])
+      );
+      setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
+    }
+  }, [data]);
 
   return (
-    <div>
+    <div className="full-screen-container">
       <HotTable
-        ref={hotTableComponent}
         data={data}
-        colHeaders={headers}
+        colHeaders={colHeaders}
+        rowHeaders={true}
+        minSpareRows={1} // Always keep at least one empty row
+        minSpareCols={1} // Always keep at least one empty column
+        stretchH="all"
+        manualColumnResize={true}
+        manualRowResize={true}
+        contextMenu={true}
+        autoWrapRow={true}
+        autoWrapCol={true}
+        afterChange={handleAfterChange} // Event listener for changes
+        afterSelection={handleAfterSelection} // Event listener for selection
         licenseKey="non-commercial-and-evaluation"
-        height="auto"
-        autoRowSize={true}
-        autoColumnSize={true}
-      >
-        {headers.map((header, index) => (
-          <HotColumn key={index} data={header}>
-            {header === 'score' ? <ScoreRenderer hot-renderer /> : null}
-            {header === 'isPromoted' ? <PromotionRenderer hot-renderer /> : null}
-          </HotColumn>
-        ))}
-      </HotTable>
-      <button onClick={addColumn}>Add Column</button>
-      <button onClick={saveData}>Save Data</button>
+      />
     </div>
   );
 };

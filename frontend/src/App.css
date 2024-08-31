@@ -28,6 +28,15 @@
   color: #61dafb;
 }
 
+.full-screen-container {
+  height: 100vh;  /* Full viewport height */
+  width: 100vw;   /* Full viewport width */
+  overflow: hidden; /* Prevent overflow */
+  box-sizing: border-box; /* Include padding/border in element's total width and height */
+  display: flex;   /* Allows for alignment adjustments */
+  flex-direction: column; /* Stack children vertically */
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
@@ -36,3 +45,4 @@
     transform: rotate(360deg);
   }
 }
+
