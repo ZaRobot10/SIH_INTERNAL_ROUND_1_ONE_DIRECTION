@@ -2,14 +2,8 @@
 import mongoose from 'mongoose';
 
 const SpreadsheetSchema = new mongoose.Schema({
-  data: {
-    type: Array,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  data:Array,
+  id:Number,
 });
 
-export default mongoose.model('Spreadsheet', SpreadsheetSchema);
+export default mongoose.model("Spreadsheet", SpreadsheetSchema);

@@ -1,5 +1,5 @@
 import { HotTable } from "@handsontable/react";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import { registerAllModules } from "handsontable/registry";
 import "handsontable/dist/handsontable.full.min.css";
 import { useState, useCallback } from "react";
@@ -22,8 +22,9 @@ const generateColumnHeaders = (numCols) => {
   return columns;
 };
 
-const ExampleComponent = () => {
+const New = () => {
   // Start with an initial set of rows and columns
+  const {id} =useParams();
   const navigate=useNavigate();
   const initialRows = 100;
   const initialCols = 26;
@@ -95,23 +96,19 @@ const ExampleComponent = () => {
   );
   const handleSave = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/save", data);
+      const res = await axios.post("http://localhost:5001/save", {id,data});
 
-      if (res.success) {
+      if (res.data.success) {
         console.log("succesfully saved");
       }
     } catch (error) {
       console.log(error.message);
     }
   };
-  const handleNew=async()=>{
-    let x = Math.floor(Math.random() * 100);
-    localStorage.setItem("endpoint",`${x}`);
-    navigate(`/sheet/${x}`);
-  }
+  
   return (
-    <div className="full-screen-container">
-      <button className="savebutton" onClick={handleNew}>New </button>
+    <div className="full-screen-container"> 
+      <button className="savebutton" onClick={handleSave}>Save</button>     
       <HotTable
         data={data}
         colHeaders={colHeaders}
@@ -132,4 +129,4 @@ const ExampleComponent = () => {
   );
 };
 
-export default ExampleComponent;
+export default New;
