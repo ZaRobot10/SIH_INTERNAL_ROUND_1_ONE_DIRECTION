@@ -35,7 +35,7 @@ const New = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io("http://localhost:5001");
+    socketRef.current = io("http://10.100.208.164:5001");
 
     // Listen for cell updates from the server
     socketRef.current.on("cell-update", ({ row, col, value }) => {
