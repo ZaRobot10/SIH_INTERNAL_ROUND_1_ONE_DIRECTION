@@ -25,7 +25,7 @@ const generateColumnHeaders = (numCols) => {
 };
 
 const New = () => {
-  const { id } = useParams();
+  const { id: sheetId } = useParams(); // Renamed `id` to `sheetId` for clarity
   const initialRows = 100;
   const initialCols = 26;
   const [data, setData] = useState(
@@ -36,7 +36,12 @@ const New = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io("http://localhost:5001");
+    socketRef.current = io("http://192.168.1.14:5001");
+
+    // Join the specific sheet room
+    if (sheetId) {
+      socketRef.current.emit("join-sheet", sheetId);
+    }
 
     // Listen for cell updates from the server
     socketRef.current.on("cell-update", ({ row, col, value }) => {
@@ -51,7 +56,7 @@ const New = () => {
     return () => {
       socketRef.current.disconnect();
     };
-  }, []);
+  }, [sheetId]);
 
   const handleAfterChange = useCallback(
     (changes, source) => {
@@ -65,8 +70,8 @@ const New = () => {
           return newData;
         });
 
-        // Emit the change to the server
-        socketRef.current.emit("cell-update", { row, col, value });
+        // Emit the change to the server with the sheetId
+        socketRef.current.emit("cell-update", { sheetId, row, col, value });
       });
 
       // Expand rows or columns if needed
@@ -95,7 +100,7 @@ const New = () => {
         setColHeaders(generateColumnHeaders(newColCount));
       }
     },
-    [data]
+    [data, sheetId]
   );
 
   const handleAfterSelection = useCallback(
@@ -114,7 +119,7 @@ const New = () => {
 
   const handleSave = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/save", { id, data });
+      const res = await axios.post("http://localhost:5001/save", { sheetId, data });
       if (res.data.success) {
         console.log("Successfully saved");
       }
