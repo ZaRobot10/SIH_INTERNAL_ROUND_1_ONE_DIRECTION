@@ -1,12 +1,13 @@
+import React, { useState, useCallback } from "react";
 import { HotTable } from "@handsontable/react";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "handsontable/dist/handsontable.full.min.css";
-import { useState, useCallback } from "react";
-// Register Handsontable's modules
-// registerAllModules();
-// registerPlugin(Formulas);
+import { registerAllModules } from "handsontable/registry";
+import { HyperFormula } from "hyperformula";
 
-// Function to generate Excel-like column headers
+// Register Handsontable's modules
+registerAllModules();
+
 const generateColumnHeaders = (numCols) => {
   const columns = [];
   for (let i = 0; i < numCols; i++) {
@@ -21,8 +22,7 @@ const generateColumnHeaders = (numCols) => {
   return columns;
 };
 
-const ExampleComponent = () => {
-  // Start with an initial set of rows and columns
+const Spreadsheet = () => {
   const navigate = useNavigate();
   const initialRows = 100;
   const initialCols = 26;
@@ -33,59 +33,47 @@ const ExampleComponent = () => {
     generateColumnHeaders(initialCols)
   );
 
-  // Function to handle changes in the table
   const handleAfterChange = useCallback(
     (changes, source) => {
       if (!changes) return;
 
-      // Determine the max row and column currently in use
       const currentMaxRows = data.length;
       const currentMaxCols = data[0].length;
-
-      // Check if we need more rows or columns
       let needsMoreRows = false;
       let needsMoreCols = false;
 
       changes.forEach(([row, col]) => {
-        if (row + 1 >= currentMaxRows) {
-          needsMoreRows = true;
-        }
-        if (col + 1 >= currentMaxCols) {
-          needsMoreCols = true;
-        }
+        if (row + 1 >= currentMaxRows) needsMoreRows = true;
+        if (col + 1 >= currentMaxCols) needsMoreCols = true;
       });
 
-      // Expand rows if needed
       if (needsMoreRows) {
         setData((prevData) => [
           ...prevData,
-          ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill("")), // Add 100 more rows
+          ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill("")), 
         ]);
       }
 
-      // Expand columns if needed
       if (needsMoreCols) {
-        const newColCount = currentMaxCols + 10; // Expand by 10 more columns
+        const newColCount = currentMaxCols + 10;
         setData((prevData) =>
           prevData.map((row) => [...row, ...Array(10).fill("")])
         );
-        setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
+        setColHeaders(generateColumnHeaders(newColCount));
       }
     },
     [data]
   );
 
-  // Function to handle selection
   const handleAfterSelection = useCallback(
     (row, col) => {
       const currentMaxCols = data[0].length;
-      // Check if the selected column is the last one
       if (col + 1 >= currentMaxCols) {
-        const newColCount = currentMaxCols + 10; // Expand by 10 more columns
+        const newColCount = currentMaxCols + 10;
         setData((prevData) =>
           prevData.map((row) => [...row, ...Array(10).fill("")])
         );
-        setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
+        setColHeaders(generateColumnHeaders(newColCount));
       }
     },
     [data]
@@ -112,13 +100,15 @@ const ExampleComponent = () => {
         contextMenu={true}
         autoWrapRow={true}
         autoWrapCol={true}
-        afterChange={handleAfterChange} // Event listener for changes
-        afterSelection={handleAfterSelection} // Event listener for selection
+        afterChange={handleAfterChange}
+        afterSelection={handleAfterSelection}
+        formulas={{
+          engine: HyperFormula,
+        }}
         licenseKey="non-commercial-and-evaluation"
-        // formulas={true} // Enable formulas
       />
     </div>
   );
 };
 
-export default ExampleComponent;
+export default Spreadsheet;
