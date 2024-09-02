@@ -13,6 +13,7 @@
   - Member_3 (2022UCM2343): [Ekankaar Khera](https://github.com/ZaRobot10)
   - Member_4 (2022UCM2341): [Arpan Tomar](https://github.com/Arpan783808)
   - Member_5 (2022UCM2348): [Hemant Gupta](https://github.com/HemantGupta04)
+  - Member_6 (2022UCM2320): [Ananya Kumar](https://github.com/HemantGupta04)
 
 ## Project Description
 SocialCalc is a collaborative spreadsheet software designed to function like Google Sheets or Microsoft Excel. This application allows multiple users to work simultaneously on spreadsheets, with real-time updates and data synchronization. It supports various operations such as addition, subtraction, and averaging, and includes features like infinite scrolling for rows and columns.
@@ -27,6 +28,7 @@ SocialCalc is a collaborative spreadsheet software designed to function like Goo
   - Node.js
   - Express.js
   - MongoDB
+  - Socket.io
 - **Tools:**
   - GitHub
   - VS Code
