@@ -1,13 +1,11 @@
 import { HotTable } from "@handsontable/react";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import { registerAllModules } from "handsontable/registry";
-import { HyperFormula } from 'hyperformula';
 import "handsontable/dist/handsontable.full.min.css";
 import { useState, useCallback } from "react";
 import axios from "axios";
 // Register Handsontable's modules
-// registerAllModules();
-// registerPlugin(Formulas);
+registerAllModules();
 
 // Function to generate Excel-like column headers
 const generateColumnHeaders = (numCols) => {
@@ -24,9 +22,10 @@ const generateColumnHeaders = (numCols) => {
   return columns;
 };
 
-const ExampleComponent = () => {
+const New = () => {
   // Start with an initial set of rows and columns
-  const navigate = useNavigate();
+  const {id} =useParams();
+  const navigate=useNavigate();
   const initialRows = 100;
   const initialCols = 26;
   const [data, setData] = useState(
@@ -35,7 +34,7 @@ const ExampleComponent = () => {
   const [colHeaders, setColHeaders] = useState(
     generateColumnHeaders(initialCols)
   );
-
+  console.log(data);
   // Function to handle changes in the table
   const handleAfterChange = useCallback(
     (changes, source) => {
@@ -73,6 +72,7 @@ const ExampleComponent = () => {
           prevData.map((row) => [...row, ...Array(10).fill("")])
         );
         setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
+        console.log(data);
       }
     },
     [data]
@@ -89,38 +89,32 @@ const ExampleComponent = () => {
           prevData.map((row) => [...row, ...Array(10).fill("")])
         );
         setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
+        console.log(data);
       }
     },
     [data]
   );
-
   const handleSave = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/save", data);
+      const res = await axios.post("http://localhost:5001/save", {id,data});
 
       if (res.data.success) {
-        console.log("Successfully saved");
+        console.log("succesfully saved");
       }
     } catch (error) {
       console.log(error.message);
     }
   };
-
-  const handleNew = async () => {
-    let x = Math.floor(Math.random() * 100);
-    localStorage.setItem("endpoint", `${x}`);
-    navigate(`/sheet/${x}`);
-  };
-
+  
   return (
-    <div className="full-screen-container">
-      <button className="newbutton" onClick={handleNew}>New</button>
+    <div className="full-screen-container"> 
+      <button className="savebutton" onClick={handleSave}>Save</button>     
       <HotTable
         data={data}
         colHeaders={colHeaders}
         rowHeaders={true}
-        minSpareRows={1}
-        minSpareCols={1}
+        minSpareRows={1} // Always keep at least one empty row
+        minSpareCols={1} // Always keep at least one empty column
         stretchH="all"
         manualColumnResize={true}
         manualRowResize={true}
@@ -130,10 +124,9 @@ const ExampleComponent = () => {
         afterChange={handleAfterChange} // Event listener for changes
         afterSelection={handleAfterSelection} // Event listener for selection
         licenseKey="non-commercial-and-evaluation"
-        // formulas={true} // Enable formulas
       />
     </div>
   );
 };
 
-export default ExampleComponent;
+export default New;
