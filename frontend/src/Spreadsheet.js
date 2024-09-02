@@ -1,10 +1,7 @@
 import { HotTable } from "@handsontable/react";
 import {useNavigate} from "react-router-dom";
-import { registerAllModules } from "handsontable/registry";
-import { HyperFormula } from 'hyperformula';
 import "handsontable/dist/handsontable.full.min.css";
 import { useState, useCallback } from "react";
-import axios from "axios";
 // Register Handsontable's modules
 // registerAllModules();
 // registerPlugin(Formulas);
@@ -93,18 +90,6 @@ const ExampleComponent = () => {
     },
     [data]
   );
-
-  const handleSave = async () => {
-    try {
-      const res = await axios.post("http://localhost:5001/save", data);
-
-      if (res.data.success) {
-        console.log("Successfully saved");
-      }
-    } catch (error) {
-      console.log(error.message);
-    }
-  };
 
   const handleNew = async () => {
     let x = Math.floor(Math.random() * 100);

@@ -1,13 +1,14 @@
 import { HotTable } from "@handsontable/react";
-import {useNavigate, useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { registerAllModules } from "handsontable/registry";
 import "handsontable/dist/handsontable.full.min.css";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
+import io from "socket.io-client";
+
 // Register Handsontable's modules
 registerAllModules();
 
-// Function to generate Excel-like column headers
 const generateColumnHeaders = (numCols) => {
   const columns = [];
   for (let i = 0; i < numCols; i++) {
@@ -23,106 +24,121 @@ const generateColumnHeaders = (numCols) => {
 };
 
 const New = () => {
-  // Start with an initial set of rows and columns
-  const {id} =useParams();
-  const navigate=useNavigate();
+  const { id } = useParams();
   const initialRows = 100;
   const initialCols = 26;
   const [data, setData] = useState(
     Array.from({ length: initialRows }, () => Array(initialCols).fill(""))
   );
-  const [colHeaders, setColHeaders] = useState(
-    generateColumnHeaders(initialCols)
-  );
-  console.log(data);
-  // Function to handle changes in the table
+  const [colHeaders, setColHeaders] = useState(generateColumnHeaders(initialCols));
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    // Initialize socket connection
+    socketRef.current = io("http://localhost:5001");
+
+    // Listen for cell updates from the server
+    socketRef.current.on("cell-update", ({ row, col, value }) => {
+      setData((prevData) => {
+        const newData = [...prevData];
+        newData[row][col] = value;
+        return newData;
+      });
+    });
+
+    // Cleanup on component unmount
+    return () => {
+      socketRef.current.disconnect();
+    };
+  }, []);
+
   const handleAfterChange = useCallback(
     (changes, source) => {
       if (!changes) return;
 
-      // Determine the max row and column currently in use
+      changes.forEach(([row, col, oldValue, value]) => {
+        // Update the data state
+        setData((prevData) => {
+          const newData = [...prevData];
+          newData[row][col] = value;
+          return newData;
+        });
+
+        // Emit the change to the server
+        socketRef.current.emit("cell-update", { row, col, value });
+      });
+
+      // Expand rows or columns if needed
       const currentMaxRows = data.length;
       const currentMaxCols = data[0].length;
-
-      // Check if we need more rows or columns
       let needsMoreRows = false;
       let needsMoreCols = false;
 
       changes.forEach(([row, col]) => {
-        if (row + 1 >= currentMaxRows) {
-          needsMoreRows = true;
-        }
-        if (col + 1 >= currentMaxCols) {
-          needsMoreCols = true;
-        }
+        if (row + 1 >= currentMaxRows) needsMoreRows = true;
+        if (col + 1 >= currentMaxCols) needsMoreCols = true;
       });
 
-      // Expand rows if needed
       if (needsMoreRows) {
         setData((prevData) => [
           ...prevData,
-          ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill("")), // Add 100 more rows
+          ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill("")),
         ]);
       }
 
-      // Expand columns if needed
       if (needsMoreCols) {
-        const newColCount = currentMaxCols + 10; // Expand by 10 more columns
+        const newColCount = currentMaxCols + 10;
         setData((prevData) =>
           prevData.map((row) => [...row, ...Array(10).fill("")])
         );
-        setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
-        console.log(data);
+        setColHeaders(generateColumnHeaders(newColCount));
       }
     },
     [data]
   );
 
-  // Function to handle selection
   const handleAfterSelection = useCallback(
     (row, col) => {
       const currentMaxCols = data[0].length;
-      // Check if the selected column is the last one
       if (col + 1 >= currentMaxCols) {
-        const newColCount = currentMaxCols + 10; // Expand by 10 more columns
+        const newColCount = currentMaxCols + 10;
         setData((prevData) =>
           prevData.map((row) => [...row, ...Array(10).fill("")])
         );
-        setColHeaders(generateColumnHeaders(newColCount)); // Update column headers
-        console.log(data);
+        setColHeaders(generateColumnHeaders(newColCount));
       }
     },
     [data]
   );
+
   const handleSave = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/save", {id,data});
-
+      const res = await axios.post("http://localhost:5001/save", { id, data });
       if (res.data.success) {
-        console.log("succesfully saved");
+        console.log("Successfully saved");
       }
     } catch (error) {
-      console.log(error.message);
+      console.error("Error saving data:", error.message);
     }
   };
-  
+
   return (
-    <div className="full-screen-container"> 
-      <button className="savebutton" onClick={handleSave}>Save</button>     
+    <div className="full-screen-container">
+      <button className="savebutton" onClick={handleSave}>Save</button>
       <HotTable
         data={data}
         colHeaders={colHeaders}
         rowHeaders={true}
-        minSpareRows={1} // Always keep at least one empty row
-        minSpareCols={1} // Always keep at least one empty column
+        minSpareRows={1}
+        minSpareCols={1}
         stretchH="all"
         manualColumnResize={true}
         manualRowResize={true}
         contextMenu={true}
         autoWrapRow={true}
         autoWrapCol={true}
-        afterChange={handleAfterChange} // Event listener for changes
-        afterSelection={handleAfterSelection} // Event listener for selection
+        afterChange={handleAfterChange}
+        afterSelection={handleAfterSelection}
         licenseKey="non-commercial-and-evaluation"
       />
     </div>
