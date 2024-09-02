@@ -1,10 +1,11 @@
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { HotTable } from "@handsontable/react";
 import { useParams } from "react-router-dom";
-import { registerAllModules } from "handsontable/registry";
 import "handsontable/dist/handsontable.full.min.css";
-import { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
 import io from "socket.io-client";
+import { registerAllModules } from "handsontable/registry";
+import { HyperFormula } from "hyperformula";
 
 // Register Handsontable's modules
 registerAllModules();
@@ -139,6 +140,9 @@ const New = () => {
         autoWrapCol={true}
         afterChange={handleAfterChange}
         afterSelection={handleAfterSelection}
+        formulas={{
+          engine: HyperFormula,
+        }}
         licenseKey="non-commercial-and-evaluation"
       />
     </div>
