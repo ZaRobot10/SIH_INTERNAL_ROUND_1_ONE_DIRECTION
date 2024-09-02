@@ -1,38 +1,47 @@
-// backend/server.js
 import express from 'express';
 import router from "./router/router.js";
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import connectDB from './db.js';
-import { createServer } from 'http'; // Import http to create a server
+import { createServer } from 'http';
 import { Server } from 'socket.io'; 
 
 // Connect to MongoDB
 connectDB();
 
 const app = express();
-
-// Create an HTTP server
 const server = createServer(app);
-
-// Create a new instance of Socket.IO and pass the HTTP server
 const io = new Server(server, {
   cors: {
-    origin: "*", // You can restrict the origin in production
+    origin: "*",
   },
 });
 
-// Socket.IO connection handling
+// In-memory store for sheet data (consider using a database for persistence)
+const sheetDataStore = {};
+
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  // Listen for changes from clients
-  socket.on('cell-update', async ({ row, col, value }) => {
-    // Broadcast the change to other connected clients
-    socket.broadcast.emit('cell-update', { row, col, value });
+  // Listen for the event where a client joins a specific sheet
+  socket.on('join-sheet', (sheetId) => {
+    if (sheetId) {
+      socket.join(sheetId);
+      console.log(`User ${socket.id} joined sheet ${sheetId}`);
+    } else {
+      console.log('Sheet ID is undefined in join-sheet event');
+    }
+  });
 
-    // Optionally, you can save the updates to the database here
-    console.log(`Cell updated: Row ${row}, Col ${col}, Value: ${value}`);
+  // Listen for cell updates and broadcast them within the same room
+  socket.on('cell-update', ({ sheetId, row, col, value }) => {
+    if (sheetId) {
+      // Broadcast the change to all clients in the same room
+      socket.to(sheetId).emit('cell-update', { row, col, value });
+      console.log(`Sheet ${sheetId} - Cell updated: Row ${row}, Col ${col}, Value: ${value}`);
+    } else {
+      console.log('Sheet ID is undefined in cell-update event');
+    }
   });
 
   // Handle disconnection
@@ -40,6 +49,7 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
   });
 });
+
 
 // Middleware
 app.use(cors());
