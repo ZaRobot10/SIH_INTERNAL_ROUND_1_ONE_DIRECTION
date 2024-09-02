@@ -1,15 +1,20 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { HotTable } from "@handsontable/react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import "handsontable/dist/handsontable.full.min.css";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import io from "socket.io-client";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
+import "./compcss/sheetpage.css";
+const host=process.env.BACKEND_URL;
 
 // Register Handsontable's modules
 registerAllModules();
 
+// Function to generate Excel-like column headers
 const generateColumnHeaders = (numCols) => {
   const columns = [];
   for (let i = 0; i < numCols; i++) {
@@ -24,6 +29,8 @@ const generateColumnHeaders = (numCols) => {
   return columns;
 };
 
+
+
 const New = () => {
   const { id: sheetId } = useParams(); // Renamed `id` to `sheetId` for clarity
   const initialRows = 100;
@@ -31,9 +38,26 @@ const New = () => {
   const [data, setData] = useState(
     Array.from({ length: initialRows }, () => Array(initialCols).fill(""))
   );
-  const [colHeaders, setColHeaders] = useState(generateColumnHeaders(initialCols));
+  const [colHeaders, setColHeaders] = useState(
+    generateColumnHeaders(initialCols)
+  );
+  const hotTableRef = useRef(null);
   const socketRef = useRef(null);
-
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    console.log(token);
+    const verifyCookie = async () => {
+      const { data } = await axios.post("http://localhost:5001/protectroute", {token});
+      const { status, user } = data;
+      console.log(status);
+      return status
+        ? toast(`Hello ${user}`, {
+            position: "top-right",
+          })
+        : (localStorage.removeItem("token"), navigate("/"));
+    };
+    verifyCookie();
+  }, [navigate]);
   useEffect(() => {
     // Initialize socket connection
     socketRef.current = io("http://192.168.1.14:5001");
@@ -62,7 +86,7 @@ const New = () => {
     (changes, source) => {
       if (!changes) return;
 
-      changes.forEach(([row, col, oldValue, value]) => {
+      changes.map(([row, col, oldValue, value]) => {
         // Update the data state
         setData((prevData) => {
           const newData = [...prevData];
@@ -80,7 +104,7 @@ const New = () => {
       let needsMoreRows = false;
       let needsMoreCols = false;
 
-      changes.forEach(([row, col]) => {
+      changes.map(([row, col]) => {
         if (row + 1 >= currentMaxRows) needsMoreRows = true;
         if (col + 1 >= currentMaxCols) needsMoreCols = true;
       });
@@ -127,11 +151,24 @@ const New = () => {
       console.error("Error saving data:", error.message);
     }
   };
-
+  const handleLogout=()=>{
+    localStorage.removeItem("token");
+    localStorage.removeItem("useremail");
+    navigate("/");
+  };
   return (
     <div className="full-screen-container">
-      <button className="savebutton" onClick={handleSave}>Save</button>
+      <div className="buttoncontainer">
+      <button className="savebutton" onClick={handleSave}>
+        Save
+      </button>
+      <button className="logout" onClick={handleLogout}>
+        logout
+      </button>
+      </div>
       <HotTable
+        className="fulltable"
+        ref={hotTableRef}
         data={data}
         colHeaders={colHeaders}
         rowHeaders={true}

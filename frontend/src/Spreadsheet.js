@@ -1,13 +1,16 @@
-import React, { useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { HotTable } from "@handsontable/react";
 import { useNavigate } from "react-router-dom";
 import "handsontable/dist/handsontable.full.min.css";
 import { registerAllModules } from "handsontable/registry";
+import axios from "axios";
 import { HyperFormula } from "hyperformula";
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./compcss/sheetpage.css";
 // Register Handsontable's modules
 registerAllModules();
-
+const host = process.env.BACKEND_URL;
 const generateColumnHeaders = (numCols) => {
   const columns = [];
   for (let i = 0; i < numCols; i++) {
@@ -32,7 +35,23 @@ const Spreadsheet = () => {
   const [colHeaders, setColHeaders] = useState(
     generateColumnHeaders(initialCols)
   );
-
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    console.log(token);
+    const verifyCookie = async () => {
+      const { data } = await axios.post("http://localhost:5001/protectroute", {
+        token,
+      });
+      const { status } = data;
+      console.log(status);
+      return status
+        ? toast("Hello", {
+            position: "top-right",
+          })
+        : (localStorage.removeItem("token"), navigate("/"));
+    };
+    verifyCookie();
+  }, [navigate]);
   const handleAfterChange = useCallback(
     (changes, source) => {
       if (!changes) return;
@@ -50,7 +69,7 @@ const Spreadsheet = () => {
       if (needsMoreRows) {
         setData((prevData) => [
           ...prevData,
-          ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill("")), 
+          ...Array.from({ length: 100 }, () => Array(currentMaxCols).fill("")),
         ]);
       }
 
@@ -84,10 +103,21 @@ const Spreadsheet = () => {
     localStorage.setItem("endpoint", `${x}`);
     navigate(`/sheet/${x}`);
   };
-
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("useremail");
+    navigate("/");
+  };
   return (
     <div className="full-screen-container">
-      <button className="newbutton" onClick={handleNew}>New</button>
+      <div className="buttoncontainer">
+        <button className="newbutton" onClick={handleNew}>
+          New
+        </button>
+        <button className="logout" onClick={handleLogout}>
+          logout
+        </button>
+      </div>
       <HotTable
         data={data}
         colHeaders={colHeaders}

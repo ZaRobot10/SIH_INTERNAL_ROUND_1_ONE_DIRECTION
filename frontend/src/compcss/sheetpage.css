@@ -1,0 +1,29 @@
+.full-screen-container{
+    height:100vh;
+    width:100%;
+    display: flex;
+    flex-direction: column;
+}
+.buttoncontainer{
+    display: flex;
+    height:20%;
+    width:100%;
+    align-items: center;
+    justify-content: center;
+    margin:10px;
+    gap:20px;
+
+}
+.logout, .savebutton, .newbutton{
+    height:50px;
+    width:120px;
+    font-size: 25px;
+    color:white;
+    background-color: blue;
+    border-radius: 15px;
+    border:none;
+    cursor:pointer;
+}
+.logout:hover,.savebutton:hover,.newbutton:hover{
+    background-color:rgb(93, 93, 255);    
+}
