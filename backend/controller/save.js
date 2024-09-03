@@ -19,6 +19,7 @@ export const login = async (req, res, next) => {
     const token = createsecrettoken(user._id);
     res.status(201).json({
       token: token,
+      username:user.username,
       message: "user logged in successfully",
       success: true,
       userid: user._id,
@@ -31,15 +32,15 @@ export const login = async (req, res, next) => {
 };
 export const signup = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    if (!password || !email) {
+    const { email, password,username } = req.body;
+    if (!password || !email||!username) {
       return res.json({ success: false, message: "user data required" });
     }
     const ispresent = await User.findOne({ email });
     if (ispresent) {
       return res.json({ success: false, message: "user already exist" });
     }
-    const user = await User.create({ email, password });
+    const user = await User.create({ email, password,username });
     user.password = await bcrypt.hash(password, 12);
     await user.save();
     const token = createsecrettoken(user._id);

@@ -9,8 +9,9 @@ import io from "socket.io-client";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "./compcss/sheetpage.css";
-const host=process.env.REACT_APP_BACKEND_URL;
-const socketip=process.env.SOCKET_URL;
+
+const host = process.env.REACT_APP_BACKEND_URL;
+
 // Register Handsontable's modules
 registerAllModules();
 
@@ -29,26 +30,25 @@ const generateColumnHeaders = (numCols) => {
   return columns;
 };
 
-
-
 const New = () => {
-  const { id: sheetId } = useParams(); // Renamed `id` to `sheetId` for clarity
-  const navigate=useNavigate();
+  const { id: sheetId } = useParams();
+  const navigate = useNavigate();
   const initialRows = 100;
   const initialCols = 26;
   const [data, setData] = useState(
     Array.from({ length: initialRows }, () => Array(initialCols).fill(""))
   );
-  const [colHeaders, setColHeaders] = useState(
-    generateColumnHeaders(initialCols)
-  );
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [editingCell, setEditingCell] = useState(null);
+  const [colHeaders, setColHeaders] = useState(generateColumnHeaders(initialCols));
   const hotTableRef = useRef(null);
   const socketRef = useRef(null);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     console.log(token);
     const verifyCookie = async () => {
-      const { data } = await axios.post(`${host}/protectroute`, {token});
+      const { data } = await axios.post(`${host}/protectroute`, { token });
       const { status, user } = data;
       console.log(status);
       return status
@@ -59,22 +59,38 @@ const New = () => {
     };
     verifyCookie();
   }, [navigate]);
+
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io(`${socketip}`);
+    socketRef.current = io(`${host}`);
 
     // Join the specific sheet room
     if (sheetId) {
-      socketRef.current.emit("join-sheet", sheetId);
+      socketRef.current.emit("join-sheet", {
+        sheetId,
+        user: localStorage.getItem("username"),
+      });
     }
 
+    // Listen for active users
+    socketRef.current.on("active-users", (users) => {
+      setActiveUsers(users);
+    });
+
     // Listen for cell updates from the server
-    socketRef.current.on("cell-update", ({ row, col, value }) => {
+    socketRef.current.on("cell-update", ({ row, col, value, user }) => {
       setData((prevData) => {
         const newData = [...prevData];
         newData[row][col] = value;
         return newData;
       });
+      setEditingCell({ row, col, user });
+      setTimeout(() => setEditingCell(null), 1000);
+    });
+
+    // Handle disconnection
+    socketRef.current.on("user-disconnected", (user) => {
+      setActiveUsers((prevUsers) => prevUsers.filter((u) => u !== user));
     });
 
     // Cleanup on component unmount
@@ -87,7 +103,7 @@ const New = () => {
     (changes, source) => {
       if (!changes) return;
 
-      changes.map(([row, col, oldValue, value]) => {
+      changes.forEach(([row, col, oldValue, value]) => {
         // Update the data state
         setData((prevData) => {
           const newData = [...prevData];
@@ -96,7 +112,13 @@ const New = () => {
         });
 
         // Emit the change to the server with the sheetId
-        socketRef.current.emit("cell-update", { sheetId, row, col, value });
+        socketRef.current.emit("cell-update", {
+          sheetId,
+          row,
+          col,
+          value,
+          user: localStorage.getItem("username"),
+        });
       });
 
       // Expand rows or columns if needed
@@ -105,7 +127,7 @@ const New = () => {
       let needsMoreRows = false;
       let needsMoreCols = false;
 
-      changes.map(([row, col]) => {
+      changes.forEach(([row, col]) => {
         if (row + 1 >= currentMaxRows) needsMoreRows = true;
         if (col + 1 >= currentMaxCols) needsMoreCols = true;
       });
@@ -144,7 +166,10 @@ const New = () => {
 
   const handleSave = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/save", { sheetId, data });
+      const res = await axios.post(`${host}/save`, {
+        sheetId,
+        data,
+      });
       if (res.data.success) {
         console.log("Successfully saved");
       }
@@ -152,23 +177,34 @@ const New = () => {
       console.error("Error saving data:", error.message);
     }
   };
-  const handleLogout=()=>{
+
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("useremail");
     navigate("/");
+    // Notify server of user disconnection
+    socketRef.current.emit("user-disconnect", localStorage.getItem("username"));
   };
+
   return (
     <div className="full-screen-container">
       <div className="buttoncontainer">
-      <button className="savebutton" onClick={handleSave}>
-        Save
-      </button>
-      <button className="logout" onClick={handleLogout}>
-        logout
-      </button>
+        <button className="savebutton" onClick={handleSave}>
+          Save
+        </button>
+        <button className="logout" onClick={handleLogout}>
+          Logout
+        </button>
+        <div className="user-icons">
+          {activeUsers.map((user, index) => (
+            <div key={index} className="user-icon">
+              {user}
+            </div>
+          ))}
+        </div>
       </div>
       <HotTable
-        className="fulltable"
+        className={`fulltable ${editingCell ? "editing-cell" : ""}`}
         ref={hotTableRef}
         data={data}
         colHeaders={colHeaders}

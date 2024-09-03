@@ -38,11 +38,11 @@ const Login = () => {
         ...inputValue,
       });
 
-      const { success, message } = data;
+      const { success, message,username } = data;
       if (success) {
         localStorage.setItem("token", data.token);
         handleSuccess(message);
-        localStorage.setItem("useremail", data.userid);
+        localStorage.setItem("username",username);
         setTimeout(() => {
           navigate("/sheet");
         });
