@@ -9,8 +9,11 @@ import io from "socket.io-client";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "./compcss/sheetpage.css";
+import { saveAs } from 'file-saver';
+import { read, utils } from "xlsx";
 const host=process.env.REACT_APP_BACKEND_URL;
 const socketip=process.env.SOCKET_URL;
+
 // Register Handsontable's modules
 registerAllModules();
 
@@ -34,6 +37,7 @@ const New = () => {
   const navigate = useNavigate();
   const initialRows = 100;
   const initialCols = 26;
+  const fileInputRef=useRef(null);
   const [data, setData] = useState(
     Array.from({ length: initialRows }, () => Array(initialCols).fill(""))
   );
@@ -51,7 +55,7 @@ const New = () => {
       const { status, user } = data;
       console.log(status);
       return status
-        ? toast(`Hello ${user}`, {
+        ? toast(`Hello`, {
             position: "top-right",
           })
         : (localStorage.removeItem("token"), navigate("/"));
@@ -97,7 +101,59 @@ const New = () => {
       socketRef.current.disconnect();
     };
   }, [sheetId]);
-
+  const handleExportCSV = () => {
+    try {
+      // Convert the spreadsheet data into a CSV format
+      const csvContent = data.map(row => row.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  
+      // Use FileSaver to trigger a download of the CSV file
+      saveAs(blob, `spreadsheet-${sheetId}.csv`);
+  
+      toast.success("CSV exported successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error("Error exporting CSV:", error.message);
+      toast.error("An error occurred while exporting CSV. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
+  
+  
+  const handleImportExcel = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+  
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = read(data, { type: "array" });
+  
+      // Assume we're interested in the first sheet
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+  
+      // Convert sheet to array of arrays
+      const importedData = utils.sheet_to_json(sheet, { header: 1 });
+  
+      // Update state with imported data
+      setData(importedData);
+      setColHeaders(generateColumnHeaders(importedData[0].length));
+    };
+    reader.readAsArrayBuffer(file);
+  };
   const handleAfterChange = useCallback(
     (changes, source) => {
       if (!changes) return;
@@ -179,7 +235,6 @@ const New = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("useremail");
     navigate("/");
     // Notify server of user disconnection
     socketRef.current.emit("user-disconnect", localStorage.getItem("username"));
@@ -188,6 +243,14 @@ const New = () => {
   return (
     <div className="full-screen-container">
       <div className="buttoncontainer">
+      <button className="savebutton" onClick={handleExportCSV}>Export CSV</button>
+      <input
+        type="file"
+        accept=".xlsx, .xls"
+        onChange={handleImportExcel}
+        ref={fileInputRef}
+        style={{ marginBottom: "10px" }}
+      />
         <button className="savebutton" onClick={handleSave}>
           Save
         </button>
