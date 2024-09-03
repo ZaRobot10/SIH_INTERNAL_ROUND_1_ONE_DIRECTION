@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "./compcss/sheetpage.css";
 // Register Handsontable's modules
 registerAllModules();
-const host = process.env.BACKEND_URL;
+
 const generateColumnHeaders = (numCols) => {
   const columns = [];
   for (let i = 0; i < numCols; i++) {
@@ -29,6 +29,8 @@ const Spreadsheet = () => {
   const navigate = useNavigate();
   const initialRows = 100;
   const initialCols = 26;
+  const host = process.env.REACT_APP_BACKEND_URL;
+  console.log(host);
   const [data, setData] = useState(
     Array.from({ length: initialRows }, () => Array(initialCols).fill(""))
   );
@@ -39,9 +41,7 @@ const Spreadsheet = () => {
     const token = localStorage.getItem("token");
     console.log(token);
     const verifyCookie = async () => {
-      const { data } = await axios.post("http://localhost:5001/protectroute", {
-        token,
-      });
+      const { data } = await axios.post(`${host}/protectroute`, {token});
       const { status } = data;
       console.log(status);
       return status

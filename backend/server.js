@@ -8,7 +8,7 @@ import { Server } from 'socket.io';
 
 // Connect to MongoDB
 connectDB();
-
+const frontendUrl = process.env.FRONTEND_URL;
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
@@ -52,7 +52,12 @@ io.on('connection', (socket) => {
 
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin:frontendUrl,
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  })
+);
 app.use(bodyParser.json());
 app.use("/", router);
 

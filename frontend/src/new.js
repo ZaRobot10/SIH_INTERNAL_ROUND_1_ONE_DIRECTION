@@ -9,8 +9,8 @@ import io from "socket.io-client";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "./compcss/sheetpage.css";
-const host=process.env.BACKEND_URL;
-
+const host=process.env.REACT_APP_BACKEND_URL;
+const socketip=process.env.SOCKET_URL;
 // Register Handsontable's modules
 registerAllModules();
 
@@ -33,6 +33,7 @@ const generateColumnHeaders = (numCols) => {
 
 const New = () => {
   const { id: sheetId } = useParams(); // Renamed `id` to `sheetId` for clarity
+  const navigate=useNavigate();
   const initialRows = 100;
   const initialCols = 26;
   const [data, setData] = useState(
@@ -47,7 +48,7 @@ const New = () => {
     const token = localStorage.getItem("token");
     console.log(token);
     const verifyCookie = async () => {
-      const { data } = await axios.post("http://localhost:5001/protectroute", {token});
+      const { data } = await axios.post(`${host}/protectroute`, {token});
       const { status, user } = data;
       console.log(status);
       return status
@@ -60,7 +61,7 @@ const New = () => {
   }, [navigate]);
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io("http://192.168.1.14:5001");
+    socketRef.current = io(`${socketip}`);
 
     // Join the specific sheet room
     if (sheetId) {

@@ -33,7 +33,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.post("http://localhost:5001/signup", {
+      const { data } = await axios.post(`${host}/signup`,{
         ...inputValue,
       });
 
