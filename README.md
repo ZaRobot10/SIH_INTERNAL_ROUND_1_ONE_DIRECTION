@@ -5,7 +5,7 @@
 
 ## Project Title
 **SocialCalc - Building a Modern Version of SocialCalc using Node.js, Go, or Django can use AI tools like copilot.**
-
+Website link :https://social-calc-two.vercel.app/
 ## Team Details
 - **Team Members:**
   - Member_1 (2022UCM2327): [Simarjeet Singh](https://github.com/AlphaSimar) **(Team Leader)** 
