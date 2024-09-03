@@ -9,9 +9,8 @@ import io from "socket.io-client";
 import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "./compcss/sheetpage.css";
-
-const host = process.env.REACT_APP_BACKEND_URL;
-
+const host=process.env.REACT_APP_BACKEND_URL;
+const socketip=process.env.SOCKET_URL;
 // Register Handsontable's modules
 registerAllModules();
 

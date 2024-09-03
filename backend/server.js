@@ -72,8 +72,7 @@ io.on('connection', (socket) => {
 app.use(
   cors({
     origin:frontendUrl,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"]
   })
 );
 app.use(bodyParser.json());
