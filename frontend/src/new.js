@@ -10,7 +10,6 @@ import { registerAllModules } from "handsontable/registry";
 import { HyperFormula } from "hyperformula";
 import "./compcss/sheetpage.css";
 const host=process.env.REACT_APP_BACKEND_URL;
-const socketip=process.env.SOCKET_URL;
 // Register Handsontable's modules
 registerAllModules();
 
@@ -61,7 +60,7 @@ const New = () => {
   }, [navigate]);
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io(`${socketip}`);
+    socketRef.current = io(`${host}`);
 
     // Join the specific sheet room
     if (sheetId) {
