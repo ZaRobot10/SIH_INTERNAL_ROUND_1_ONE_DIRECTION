@@ -10,9 +10,10 @@ const Signup = () => {
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState({
     email: "",
-    password: ""
+    password: "",
+    username:""
   });
-  const { email, password} = inputValue;
+  const { email, password,username} = inputValue;
   const handleOnChange = (e) => {
     const { name, value } = e.target;
     setInputValue({
@@ -40,6 +41,7 @@ const Signup = () => {
       const { success, message } = data;
       if (success) {
         localStorage.setItem("token", data.token);
+        localStorage.setItem("username",username);
         handleSuccess(message);
         setTimeout(() => {
           navigate("/sheet");
@@ -73,6 +75,18 @@ const Signup = () => {
               name="email"
               value={email}
               placeholder="Enter your email"
+              onChange={handleOnChange}
+            />
+          </div>
+          <div>
+            <label className="email" htmlFor="username">
+              Username
+            </label>
+            <input
+              type="username"
+              name="username"
+              value={username}
+              placeholder="Enter your username"
               onChange={handleOnChange}
             />
           </div>
